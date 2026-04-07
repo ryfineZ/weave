@@ -4,8 +4,8 @@
 *.out
 coverage.txt
 
-# Generated proto code (regenerate with: buf generate)
-/gen/
+# Generated proto code is committed. Regenerate with: buf generate
+# /gen/
 
 # macOS
 .DS_Store
