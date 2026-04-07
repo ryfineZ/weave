@@ -1,0 +1,75 @@
+syntax = "proto3";
+
+package proxy.core.v1;
+
+option go_package = "github.com/ryfineZ/weave/gen/go/proxy/core/v1;corev1";
+
+// ─── Rule action ─────────────────────────────────────────────────────────────
+
+enum RuleActionKind {
+  RULE_ACTION_KIND_UNSPECIFIED = 0;
+  RULE_ACTION_KIND_PROXY = 1;   // route through a specific Chain
+  RULE_ACTION_KIND_DIRECT = 2;  // bypass all proxies
+  RULE_ACTION_KIND_REJECT = 3;  // drop the connection
+}
+
+message RuleAction {
+  RuleActionKind kind = 1;
+  string chain_id = 2; // only meaningful when kind == PROXY
+}
+
+// ─── Stage 1 — Identity rules (process / App) ────────────────────────────────
+//
+// Evaluated before any destination rule regardless of order.
+// In 0.1.0, matching is done by process name (with process-tree expansion).
+// Future: App bundle ID, App endpoint knowledge base expansion.
+
+message IdentityRule {
+  string id = 1;
+  string process_name = 2;  // matched against the process name of the initiating PID
+  RuleAction action = 3;
+  uint32 order = 4;         // lower = higher priority within Stage 1
+}
+
+// ─── Stage 2 — Destination rules ─────────────────────────────────────────────
+//
+// Evaluated in user-defined order after Stage 1 yields no match.
+
+enum DestinationMatchKind {
+  DESTINATION_MATCH_KIND_UNSPECIFIED = 0;
+  DESTINATION_MATCH_KIND_DOMAIN_SUFFIX = 1;
+  DESTINATION_MATCH_KIND_DOMAIN_KEYWORD = 2;
+  DESTINATION_MATCH_KIND_DOMAIN_REGEX = 3;
+  DESTINATION_MATCH_KIND_IP_CIDR = 4;
+  DESTINATION_MATCH_KIND_GEOIP = 5;
+  DESTINATION_MATCH_KIND_RULESET = 6; // references a RuleSet by id
+}
+
+message DestinationRule {
+  string id = 1;
+  DestinationMatchKind kind = 2;
+  string value = 3;         // the match value (suffix, keyword, CIDR, country code, or ruleset id)
+  RuleAction action = 4;
+  uint32 order = 5;
+}
+
+// ─── RuleSet (imported rule pack, e.g. from Clash) ───────────────────────────
+
+enum RuleSetFormat {
+  RULE_SET_FORMAT_UNSPECIFIED = 0;
+  RULE_SET_FORMAT_CLASH = 1;
+}
+
+message RuleSet {
+  string id = 1;
+  string name = 2;
+  RuleSetFormat format = 3;
+  string source_url = 4;
+
+  // Maps policy names from the source rule set (e.g. "Proxy", "DIRECT") to
+  // a RuleAction. Set by the user during import via the policy-mapping dialog.
+  map<string, RuleAction> policy_map = 5;
+
+  bool enabled = 6;
+  uint32 rule_count = 7;  // informational, set on import
+}

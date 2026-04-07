@@ -1,0 +1,188 @@
+syntax = "proto3";
+
+package proxy.core.v1;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ryfineZ/weave/gen/go/proxy/core/v1;corev1";
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum Protocol {
+  PROTOCOL_UNSPECIFIED = 0;
+  PROTOCOL_VLESS = 1;
+  PROTOCOL_VMESS = 2;
+  PROTOCOL_TROJAN = 3;
+  PROTOCOL_SHADOWSOCKS = 4;
+  PROTOCOL_HYSTERIA2 = 5;
+  PROTOCOL_TUIC = 6;
+  PROTOCOL_SOCKS5 = 7;
+  PROTOCOL_HTTP = 8;
+}
+
+enum GroupStrategy {
+  GROUP_STRATEGY_UNSPECIFIED = 0;
+  GROUP_STRATEGY_FALLBACK = 1;
+  // reserved for commercial version:
+  GROUP_STRATEGY_WEIGHTED = 2;
+  GROUP_STRATEGY_RANDOM = 3;
+  GROUP_STRATEGY_URLTEST = 4;
+}
+
+enum SubscriptionFormat {
+  SUBSCRIPTION_FORMAT_UNSPECIFIED = 0;
+  SUBSCRIPTION_FORMAT_CLASH = 1;
+  SUBSCRIPTION_FORMAT_V2RAY = 2;
+  SUBSCRIPTION_FORMAT_SINGBOX = 3;
+}
+
+// ─── Protocol configs ────────────────────────────────────────────────────────
+
+message VlessConfig {
+  string uuid = 1;
+  string flow = 2;           // e.g. "xtls-rprx-vision"
+  TlsConfig tls = 3;
+  TransportConfig transport = 4;
+}
+
+message VmessConfig {
+  string uuid = 1;
+  uint32 alter_id = 2;
+  string security = 3;       // e.g. "auto", "aes-128-gcm"
+  TlsConfig tls = 4;
+  TransportConfig transport = 5;
+}
+
+message TrojanConfig {
+  // password stored in keychain, referenced by credential_ref on Node
+  TlsConfig tls = 1;
+  TransportConfig transport = 2;
+}
+
+message ShadowsocksConfig {
+  string method = 1;         // e.g. "2022-blake3-aes-256-gcm"
+  // password stored in keychain
+}
+
+message Hysteria2Config {
+  // password stored in keychain
+  TlsConfig tls = 1;
+  Hysteria2Obfs obfs = 2;
+  uint64 up_mbps = 3;
+  uint64 down_mbps = 4;
+}
+
+message Hysteria2Obfs {
+  string type = 1;           // e.g. "salamander"
+  // password stored in keychain as obfs_ref
+  string obfs_ref = 2;
+}
+
+message TuicConfig {
+  string uuid = 1;
+  // password stored in keychain
+  TlsConfig tls = 2;
+  string congestion_control = 3; // e.g. "bbr"
+}
+
+message Socks5Config {
+  string username = 1;
+  // password stored in keychain
+}
+
+message HttpConfig {
+  string username = 1;
+  // password stored in keychain
+  bool tls = 2;
+}
+
+message TlsConfig {
+  string server_name = 1;
+  bool insecure = 2;
+  string fingerprint = 3;    // e.g. "chrome"
+  repeated string alpn = 4;
+  // Reality fields
+  string reality_public_key = 5;
+  string reality_short_id = 6;
+}
+
+message TransportConfig {
+  string type = 1;           // "ws", "grpc", "http", "quic", ""
+  // WebSocket
+  string ws_path = 2;
+  map<string, string> ws_headers = 3;
+  // gRPC
+  string grpc_service_name = 4;
+  // HTTP
+  repeated string http_path = 5;
+  map<string, string> http_headers = 6;
+}
+
+// ─── Node ────────────────────────────────────────────────────────────────────
+
+message Node {
+  string id = 1;
+  string name = 2;
+  Protocol protocol = 3;
+  string address = 4;
+  uint32 port = 5;
+
+  oneof config {
+    VlessConfig vless = 10;
+    VmessConfig vmess = 11;
+    TrojanConfig trojan = 12;
+    ShadowsocksConfig shadowsocks = 13;
+    Hysteria2Config hysteria2 = 14;
+    TuicConfig tuic = 15;
+    Socks5Config socks5 = 16;
+    HttpConfig http = 17;
+  }
+
+  // Sensitive fields (passwords, UUIDs) are stored in macOS Keychain.
+  // This ref takes the form "keychain://weave/<node-id>".
+  string credential_ref = 20;
+
+  repeated string tags = 30;
+  string subscription_id = 31; // empty for manually added nodes
+  // server_id intentionally absent in 0.1.0 — added in commercial version
+}
+
+// ─── NodeGroup ───────────────────────────────────────────────────────────────
+
+// NodeGroup is defined in the data model from day one (with all strategy
+// variants in the enum) even though 0.1.0 UI only exposes single-node hops.
+message NodeGroup {
+  string id = 1;
+  string name = 2;
+  repeated string node_ids = 3;
+  GroupStrategy strategy = 4;
+  // For URLTEST / FALLBACK: URL to test, interval, tolerance
+  string test_url = 10;
+  uint32 interval_seconds = 11;
+  uint32 tolerance_ms = 12;
+}
+
+// ─── Subscription ─────────────────────────────────────────────────────────────
+
+message Subscription {
+  string id = 1;
+  string name = 2;
+  SubscriptionFormat format = 3;
+  string url = 4;
+  google.protobuf.Timestamp last_refresh = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  uint32 node_count = 7;
+  string user_agent = 8;     // custom UA for fetching
+}
+
+// ─── Probe result (embedded in responses) ────────────────────────────────────
+
+message ProbeResult {
+  string node_id = 1;
+  // Latency in milliseconds; -1 means unreachable
+  int32 tcp_latency_ms = 2;
+  int32 proxy_latency_ms = 3;
+  string exit_ip = 4;
+  string exit_country = 5;   // ISO 3166-1 alpha-2
+  google.protobuf.Timestamp probed_at = 6;
+}

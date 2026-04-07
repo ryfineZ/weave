@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package proxy.core.v1;
+
+import "proxy/core/v1/node.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/ryfineZ/weave/gen/go/proxy/core/v1;corev1";
+
+service SubscriptionService {
+  rpc ListSubscriptions(google.protobuf.Empty) returns (ListSubscriptionsResponse);
+  rpc AddSubscription(AddSubscriptionRequest) returns (AddSubscriptionResponse);
+  rpc UpdateSubscription(UpdateSubscriptionRequest) returns (UpdateSubscriptionResponse);
+  rpc DeleteSubscription(DeleteSubscriptionRequest) returns (google.protobuf.Empty);
+
+  // Fetch and parse the subscription URL, upsert returned nodes.
+  // Streams progress events until complete.
+  rpc RefreshSubscription(RefreshSubscriptionRequest) returns (stream RefreshProgress);
+
+  // Preview: parse a raw subscription string without saving anything.
+  // Used in the import wizard "Preview" step before the user confirms.
+  rpc PreviewSubscription(PreviewSubscriptionRequest) returns (PreviewSubscriptionResponse);
+}
+
+message ListSubscriptionsResponse { repeated Subscription subscriptions = 1; }
+
+message AddSubscriptionRequest {
+  string name = 1;
+  SubscriptionFormat format = 2;
+  string url = 3;
+  string user_agent = 4;
+}
+message AddSubscriptionResponse { Subscription subscription = 1; }
+
+message UpdateSubscriptionRequest { Subscription subscription = 1; }
+message UpdateSubscriptionResponse { Subscription subscription = 1; }
+
+message DeleteSubscriptionRequest { string id = 1; }
+
+message RefreshSubscriptionRequest { string id = 1; }
+
+message RefreshProgress {
+  enum Stage {
+    STAGE_UNSPECIFIED = 0;
+    STAGE_FETCHING = 1;
+    STAGE_PARSING = 2;
+    STAGE_SAVING = 3;
+    STAGE_DONE = 4;
+    STAGE_ERROR = 5;
+  }
+  Stage stage = 1;
+  uint32 nodes_found = 2;
+  uint32 nodes_saved = 3;
+  string error_message = 4; // set when stage == ERROR
+}
+
+message PreviewSubscriptionRequest {
+  SubscriptionFormat format = 1;
+  string raw = 2; // raw content (URL body already fetched by client, or pasted text)
+}
+message PreviewSubscriptionResponse {
+  repeated Node nodes = 1; // parsed, not persisted
+  repeated string warnings = 2;
+}

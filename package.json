@@ -1,0 +1,15 @@
+{
+  "name": "weave",
+  "private": true,
+  "workspaces": [
+    "apps/desktop"
+  ],
+  "scripts": {
+    "desktop": "npm -w apps/desktop run dev",
+    "desktop:build": "npm -w apps/desktop run build",
+    "proto:gen": "buf generate"
+  },
+  "devDependencies": {
+    "@bufbuild/buf": "latest"
+  }
+}

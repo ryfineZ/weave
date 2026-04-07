@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package proxy.core.v1;
+
+import "proxy/core/v1/chain.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/ryfineZ/weave/gen/go/proxy/core/v1;corev1";
+
+service ChainService {
+  rpc ListChains(ListChainsRequest) returns (ListChainsResponse);
+  rpc GetChain(GetChainRequest) returns (GetChainResponse);
+  rpc CreateChain(CreateChainRequest) returns (CreateChainResponse);
+  rpc UpdateChain(UpdateChainRequest) returns (UpdateChainResponse);
+  rpc DeleteChain(DeleteChainRequest) returns (google.protobuf.Empty);
+
+  // Enable / disable a chain (updates enabled field)
+  rpc SetChainEnabled(SetChainEnabledRequest) returns (google.protobuf.Empty);
+
+  // Streaming runtime state (bytes_up/down, active connections, status)
+  rpc WatchChainStates(WatchChainStatesRequest) returns (stream ChainState);
+}
+
+message ListChainsRequest {}
+message ListChainsResponse { repeated Chain chains = 1; }
+
+message GetChainRequest { string id = 1; }
+message GetChainResponse { Chain chain = 1; }
+
+message CreateChainRequest { Chain chain = 1; }
+message CreateChainResponse { Chain chain = 1; }
+
+message UpdateChainRequest { Chain chain = 1; }
+message UpdateChainResponse { Chain chain = 1; }
+
+message DeleteChainRequest { string id = 1; }
+
+message SetChainEnabledRequest {
+  string id = 1;
+  bool enabled = 2;
+}
+
+message WatchChainStatesRequest {
+  repeated string chain_ids = 1; // empty = watch all
+}

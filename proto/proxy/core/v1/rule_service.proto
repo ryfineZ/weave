@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package proxy.core.v1;
+
+import "proxy/core/v1/rule.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/ryfineZ/weave/gen/go/proxy/core/v1;corev1";
+
+service RuleService {
+  // Identity rules (Stage 1)
+  rpc ListIdentityRules(google.protobuf.Empty) returns (ListIdentityRulesResponse);
+  rpc UpsertIdentityRule(UpsertIdentityRuleRequest) returns (UpsertIdentityRuleResponse);
+  rpc DeleteIdentityRule(DeleteIdentityRuleRequest) returns (google.protobuf.Empty);
+  rpc ReorderIdentityRules(ReorderRulesRequest) returns (google.protobuf.Empty);
+
+  // Destination rules (Stage 2)
+  rpc ListDestinationRules(google.protobuf.Empty) returns (ListDestinationRulesResponse);
+  rpc UpsertDestinationRule(UpsertDestinationRuleRequest) returns (UpsertDestinationRuleResponse);
+  rpc DeleteDestinationRule(DeleteDestinationRuleRequest) returns (google.protobuf.Empty);
+  rpc ReorderDestinationRules(ReorderRulesRequest) returns (google.protobuf.Empty);
+
+  // RuleSets (imported packs)
+  rpc ListRuleSets(google.protobuf.Empty) returns (ListRuleSetsResponse);
+  rpc ImportRuleSet(ImportRuleSetRequest) returns (ImportRuleSetResponse);
+  rpc UpdateRuleSet(UpdateRuleSetRequest) returns (UpdateRuleSetResponse);
+  rpc DeleteRuleSet(DeleteRuleSetRequest) returns (google.protobuf.Empty);
+  rpc SetRuleSetEnabled(SetRuleSetEnabledRequest) returns (google.protobuf.Empty);
+}
+
+message ListIdentityRulesResponse { repeated IdentityRule rules = 1; }
+
+message UpsertIdentityRuleRequest { IdentityRule rule = 1; }
+message UpsertIdentityRuleResponse { IdentityRule rule = 1; }
+
+message DeleteIdentityRuleRequest { string id = 1; }
+
+// ids in desired order (full replacement of order)
+message ReorderRulesRequest { repeated string ids = 1; }
+
+message ListDestinationRulesResponse { repeated DestinationRule rules = 1; }
+
+message UpsertDestinationRuleRequest { DestinationRule rule = 1; }
+message UpsertDestinationRuleResponse { DestinationRule rule = 1; }
+
+message DeleteDestinationRuleRequest { string id = 1; }
+
+message ListRuleSetsResponse { repeated RuleSet rule_sets = 1; }
+
+message ImportRuleSetRequest {
+  string name = 1;
+  RuleSetFormat format = 2;
+  string source_url = 3;
+  // policy_map filled in by user in the PolicyMappingDialog before calling this
+  map<string, RuleAction> policy_map = 4;
+}
+message ImportRuleSetResponse { RuleSet rule_set = 1; }
+
+message UpdateRuleSetRequest { RuleSet rule_set = 1; }
+message UpdateRuleSetResponse { RuleSet rule_set = 1; }
+
+message DeleteRuleSetRequest { string id = 1; }
+
+message SetRuleSetEnabledRequest {
+  string id = 1;
+  bool enabled = 2;
+}

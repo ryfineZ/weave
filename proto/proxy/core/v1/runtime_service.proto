@@ -1,0 +1,81 @@
+syntax = "proto3";
+
+package proxy.core.v1;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/ryfineZ/weave/gen/go/proxy/core/v1;corev1";
+
+// RuntimeService controls the proxy daemon and exposes real-time metrics.
+service RuntimeService {
+  // Start / stop the proxy engine (TUN + system proxy)
+  rpc Start(google.protobuf.Empty) returns (google.protobuf.Empty);
+  rpc Stop(google.protobuf.Empty) returns (google.protobuf.Empty);
+
+  // Current daemon status
+  rpc GetStatus(google.protobuf.Empty) returns (DaemonStatus);
+
+  // Real-time global traffic stats (bytes/s, total connections)
+  rpc WatchTraffic(google.protobuf.Empty) returns (stream TrafficSnapshot);
+
+  // Structured log stream for the UI log panel
+  rpc WatchLogs(WatchLogsRequest) returns (stream LogEntry);
+
+  // Daemon version info
+  rpc GetVersion(google.protobuf.Empty) returns (VersionInfo);
+}
+
+enum EngineState {
+  ENGINE_STATE_UNSPECIFIED = 0;
+  ENGINE_STATE_STOPPED = 1;
+  ENGINE_STATE_STARTING = 2;
+  ENGINE_STATE_RUNNING = 3;
+  ENGINE_STATE_STOPPING = 4;
+  ENGINE_STATE_ERROR = 5;
+}
+
+message DaemonStatus {
+  EngineState engine_state = 1;
+  string error_message = 2;       // user-facing, set when state == ERROR
+  bool tun_enabled = 3;
+  bool system_proxy_enabled = 4;
+  string listen_address = 5;      // e.g. "127.0.0.1:7890"
+  google.protobuf.Timestamp started_at = 6;
+}
+
+message TrafficSnapshot {
+  uint64 upload_bytes_per_sec = 1;
+  uint64 download_bytes_per_sec = 2;
+  uint64 total_upload_bytes = 3;
+  uint64 total_download_bytes = 4;
+  uint32 active_connections = 5;
+  google.protobuf.Timestamp ts = 6;
+}
+
+enum LogLevel {
+  LOG_LEVEL_UNSPECIFIED = 0;
+  LOG_LEVEL_DEBUG = 1;
+  LOG_LEVEL_INFO = 2;
+  LOG_LEVEL_WARN = 3;
+  LOG_LEVEL_ERROR = 4;
+}
+
+message WatchLogsRequest {
+  LogLevel min_level = 1; // default INFO
+}
+
+message LogEntry {
+  LogLevel level = 1;
+  string message = 2;           // user-facing message (no internal details)
+  google.protobuf.Timestamp ts = 3;
+  map<string, string> fields = 4; // structured fields for UI display
+}
+
+message VersionInfo {
+  string version = 1;       // e.g. "0.1.0"
+  string commit = 2;
+  string build_date = 3;
+  string go_version = 4;
+  string singbox_version = 5;
+}

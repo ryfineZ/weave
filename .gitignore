@@ -1,0 +1,47 @@
+# Go
+/vendor/
+*.test
+*.out
+coverage.txt
+
+# Generated proto code (regenerate with: buf generate)
+/gen/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Node / npm
+node_modules/
+npm-debug.log*
+.npm
+
+# Tauri
+apps/desktop/src-tauri/target/
+apps/desktop/dist/
+apps/desktop/.next/
+
+# Build artifacts
+/build/dist/
+*.dmg
+*.app
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Secrets / env
+.env
+.env.*
+!.env.example
+
+# SQLite
+*.db
+*.db-shm
+*.db-wal
+
+# Logs
+*.log

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package proxy.core.v1;
+
+option go_package = "github.com/ryfineZ/weave/gen/go/proxy/core/v1;corev1";
+
+// ─── Chain ───────────────────────────────────────────────────────────────────
+
+// A Chain is an ordered sequence of hops. Traffic enters the first hop and
+// exits from the last. In 0.1.0, every hop references a single Node; NodeGroup
+// hops are reserved for future fallback / load-balancing support.
+message Chain {
+  string id = 1;
+  string name = 2;
+  repeated ChainHop hops = 3;
+  bool enabled = 4;
+  string description = 5;
+}
+
+message ChainHop {
+  oneof target {
+    string node_id = 1;
+    string group_id = 2; // not used in 0.1.0 UI, kept for model completeness
+  }
+}
+
+// ─── Runtime state (read-only, pushed via streaming RPC) ─────────────────────
+
+enum ChainStatus {
+  CHAIN_STATUS_UNSPECIFIED = 0;
+  CHAIN_STATUS_INACTIVE = 1;   // disabled by user
+  CHAIN_STATUS_CONNECTING = 2;
+  CHAIN_STATUS_ACTIVE = 3;
+  CHAIN_STATUS_ERROR = 4;
+}
+
+message ChainState {
+  string chain_id = 1;
+  ChainStatus status = 2;
+  string error_message = 3;   // user-facing, empty when status != ERROR
+  uint64 bytes_up = 4;
+  uint64 bytes_down = 5;
+  uint32 active_connections = 6;
+}

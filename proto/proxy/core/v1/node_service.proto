@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package proxy.core.v1;
+
+import "proxy/core/v1/node.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "github.com/ryfineZ/weave/gen/go/proxy/core/v1;corev1";
+
+service NodeService {
+  // Node CRUD
+  rpc ListNodes(ListNodesRequest) returns (ListNodesResponse);
+  rpc GetNode(GetNodeRequest) returns (GetNodeResponse);
+  rpc CreateNode(CreateNodeRequest) returns (CreateNodeResponse);
+  rpc UpdateNode(UpdateNodeRequest) returns (UpdateNodeResponse);
+  rpc DeleteNode(DeleteNodeRequest) returns (google.protobuf.Empty);
+
+  // NodeGroup CRUD
+  rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
+  rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+  rpc UpdateGroup(UpdateGroupRequest) returns (UpdateGroupResponse);
+  rpc DeleteGroup(DeleteGroupRequest) returns (google.protobuf.Empty);
+
+  // Probe results (streaming: server pushes updates as probes complete)
+  rpc WatchProbeResults(WatchProbeResultsRequest) returns (stream ProbeResult);
+  rpc TriggerProbe(TriggerProbeRequest) returns (google.protobuf.Empty);
+}
+
+message ListNodesRequest {
+  repeated string tag_filter = 1;
+  string subscription_id_filter = 2;
+}
+message ListNodesResponse { repeated Node nodes = 1; }
+
+message GetNodeRequest { string id = 1; }
+message GetNodeResponse { Node node = 1; }
+
+message CreateNodeRequest { Node node = 1; }
+message CreateNodeResponse { Node node = 1; }
+
+message UpdateNodeRequest { Node node = 1; }
+message UpdateNodeResponse { Node node = 1; }
+
+message DeleteNodeRequest { string id = 1; }
+
+message ListGroupsRequest {}
+message ListGroupsResponse { repeated NodeGroup groups = 1; }
+
+message CreateGroupRequest { NodeGroup group = 1; }
+message CreateGroupResponse { NodeGroup group = 1; }
+
+message UpdateGroupRequest { NodeGroup group = 1; }
+message UpdateGroupResponse { NodeGroup group = 1; }
+
+message DeleteGroupRequest { string id = 1; }
+
+message WatchProbeResultsRequest {
+  repeated string node_ids = 1; // empty = watch all
+}
+
+message TriggerProbeRequest {
+  repeated string node_ids = 1; // empty = probe all
+}
